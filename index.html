@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Typing Training</title>
+<link href="typing.css" rel="stylesheet" />
+</head>
+<body>
+<div id="main">
+<h2>type in the space below</h2>
+<input type="file" id="input" />
+<label for="jump">Jump to Line:</label>
+<input type="text" id="jump" />
+<input type="button" value="Load Text" id="addFile" />
+<div id="textAr"></div>
+<div>
+<div id="nextLine"></div>
+<textarea id="correctText" readonly></textarea>
+</div>
+<div>
+<textarea id="currentLetter"></textarea>
+</div>
+<input type="button" value="Pause" id="pauseBtn" />
+<div id="stats">
+<div class="data" id="mistake">
+<span>Mistakes:</span>
+<span id="mistakeNum"> </span>
+</div>
+<div class="data" id="chars">
+<span>Characters typed:</span>
+<span id="charNum"></span>
+</div>
+<div class="data" id="words">
+<span>Word count:</span>
+<span id="wordNum"></span>
+</div>
+<div class="data" id="line">
+<span>Line Number:</span>
+<span id="linesNum"></span>
+</div>
+<div class="data" id="time">
+<span>Time:</span>
+<span id="seconds"></span>
+</div>
+<div class="data" id="wordpm">
+<span>Words per Minute:</span>
+<span id="wpm"></span>
+</div>
+</div>
+<button id="darkMode">dark mode
+</button>
+</div>
+<script src="jquery-3.3.1.js"></script>
+<script type="text/javascript"> document.addEventListener('click', function(e) { if(document.activeElement.toString() == '[object HTMLButtonElement]'){ document.activeElement.blur(); } }); </script>
+<script>
+var watch = 0;
+var charCounter = 0;
+var mistakeCount = 0;
+var time = 0;
+var words = 0;
+var str = document.getElementById("textAr").innerHTML;
+var n = 0;
+var temp = str.substring(n,n+1);
+var lines; 
+var started = false;
+var lineNum = 0;
+
+window.addEventListener("load",setMargins);
+window.addEventListener("resize",setMargins);
+function setMargins(){
+	var margin = document.getElementById("correctText").getBoundingClientRect();
+	document.getElementById("textAr").style.marginLeft = (margin.x-7) +"px";
+	document.getElementById("nextLine").style.marginLeft = (margin.x-7) +"px";
+	document.getElementById("textAr").style.fontSize = parseFloat(window.innerWidth)/90 + "pt";
+	document.getElementById("nextLine").style.fontSize = parseFloat(window.innerWidth)/90 + "pt";
+	document.getElementById("correctText").style.fontSize = parseFloat(window.innerWidth)/90 + "pt";
+	
+}
+
+
+function identifyKey(e){
+	if(e.keyCode==27){
+		pause();
+	}
+	else if(!started){
+		started = true;
+		startTime();
+	}
+	var str1 = e.key;
+	if(str1.localeCompare(temp)==0){
+		if(str1.localeCompare(" ")==0){
+			words++;
+			document.getElementById("wordNum").innerHTML=words;
+		}
+		document.getElementById("correctText").innerHTML += temp;
+		increaseN();
+		charCounter++;
+		document.getElementById("charNum").innerHTML=charCounter;
+		document.getElementById("correctText").style.color="black";
+	}	
+	else if(str1.localeCompare("Shift")==0) return;
+	else{
+		if(!(document.getElementById("correctText").style.color.localeCompare("red")==0)){
+			mistakeCount++;	
+		}
+		document.getElementById("mistakeNum").innerHTML = mistakeCount;
+		document.getElementById("correctText").style.color="red";
+	}
+	
+}
+
+
+function increaseN(){
+	n++;
+	temp = str.substring(n,n+1);
+	if(temp.localeCompare("“")==0||temp.localeCompare("”")==0) temp = "\"";
+	if(temp.localeCompare("—")==0) temp = "-";
+	console.log(temp);
+	if(n>=str.length-1) newLine();
+}
+
+document.getElementById("input").addEventListener("click",allowLoad);
+function allowLoad(){
+	document.getElementById("addFile").addEventListener("click",readFile);
+}
+function readFile(){
+	event.target.removeEventListener("click",readFile);
+	if(document.getElementById("input").files.length == 0) 
+		return;
+	var file = document.getElementById("input").files[0];
+	var reader = new FileReader();
+	reader.addEventListener("load", event => {
+	lines = event.target.result.split("\n");
+	if(Number.isInteger(parseInt(document.getElementById("jump").value))) lineNum = document.getElementById("jump").value;
+	else lineNum = 0;
+	while(lines[lineNum].length == 1) lineNum++; 
+	document.getElementById("textAr").innerHTML = lines[lineNum];
+	document.getElementById("nextLine").innerHTML = lines[parseInt(lineNum)+1];
+	str = lines[lineNum];
+	lineNum++;
+	time=-1;
+	charCounter = 0;
+	mistakeCount = 0;
+	words = 0;
+	n = 0;
+	whileRunning();
+	started = false;
+	startTime();
+
+	temp = str.substring(0,1);
+	while(temp.localeCompare(" ")==0){
+		increaseN();
+	}
+	});
+	reader.readAsText(file);
+	
+	gameLoading();
+}
+
+
+function gameLoading(){
+	document.getElementById("correctText").innerHTML = "Game loading ...";
+	window.setTimeout(allowText,5000);
+}
+
+
+function allowText(){
+	document.addEventListener("keydown",identifyKey);
+	document.getElementById("correctText").innerHTML = "";
+	}
+
+document.getElementById("pauseBtn").addEventListener("click",pause);
+function pause(){
+	started = false;
+	startTime();
+}
+
+
+function whileRunning(){
+	if(started){
+		time++;
+		document.getElementById("seconds").innerHTML = time;
+		document.getElementById("wpm").innerHTML = calcWpm();
+	}
+	function calcWpm(){
+		return parseInt(charCounter/time*12);
+	}
+}
+
+
+function startTime(){
+	clearInterval(watch);
+	if(started)
+		watch = setInterval(whileRunning,1000);
+}	
+
+
+function newLine(){
+	while(lines[lineNum].length == 1) lineNum++; 
+	if(lineNum<lines.length){
+		str = lines[lineNum];
+		temp = str.substring(0,1);
+		n=0;
+		while(temp.localeCompare(" ")==0){
+			increaseN();
+		}
+		document.getElementById("textAr").innerHTML = str;
+		document.getElementById("linesNum").innerHTML = lineNum + " / " + lines.length;
+		document.getElementById("correctText").innerHTML = "";
+		words++;
+		mistakeCount--;
+		lineNum++;	
+		while(lines[lineNum].length==1) lineNum++; 
+		document.getElementById("nextLine").innerHTML = lines[lineNum];
+	}
+	
+}
+
+
+document.getElementById("darkMode").addEventListener("click",goDark);
+var isDark = false;
+function goDark(){
+	if(!isDark){
+		document.body.style.backgroundColor = "#121212";
+		document.body.style.color="#f5f5f5";
+		isDark=true;
+	}
+	else{
+		document.body.style.backgroundColor = "white";
+		document.body.style.color = "black";
+		isDark=false;
+	}
+	
+}
+
+
+</script>
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="/__/firebase/8.2.5/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+
+<!-- Initialize Firebase -->
+<script src="/__/firebase/init.js"></script>
+</body>

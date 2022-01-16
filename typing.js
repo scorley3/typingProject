@@ -1,0 +1,1 @@
+$(#textAr).load("prideAndPrejudice.txt")
